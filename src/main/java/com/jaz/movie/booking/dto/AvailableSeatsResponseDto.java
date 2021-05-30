@@ -1,12 +1,13 @@
 package com.jaz.movie.booking.dto;
 
 import com.jaz.movie.booking.entity.Movie;
+import com.jaz.movie.booking.entity.SeatInfo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -17,5 +18,5 @@ public class AvailableSeatsResponseDto {
 
     private Movie movie;
     private Map<Integer, String> seats;
-    private Map<String, BigDecimal> seatInfo;
+    private List<SeatInfo> seatInfo;
 }

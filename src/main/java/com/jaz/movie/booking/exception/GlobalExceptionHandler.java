@@ -48,6 +48,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(JwtExpiredException.class)
+    public ResponseEntity<Object> handleJwtExpiredException(JwtExpiredException ex) {
+        Map<String, Object> body = getStringObjectMap(ex.getLocalizedMessage());
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Object> handleException(Exception ex) {
+        Map<String, Object> body = getStringObjectMap(ex.getLocalizedMessage());
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     private Map<String, Object> getStringObjectMap(String localizedMessage) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", new Date());

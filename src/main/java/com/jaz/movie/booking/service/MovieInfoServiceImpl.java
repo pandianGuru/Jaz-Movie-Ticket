@@ -3,22 +3,20 @@ package com.jaz.movie.booking.service;
 import com.jaz.movie.booking.dto.AvailableSeatsRequestDto;
 import com.jaz.movie.booking.dto.AvailableSeatsResponseDto;
 import com.jaz.movie.booking.dto.MovieScreenResponseDto;
-import com.jaz.movie.booking.dto.SeatType;
 import com.jaz.movie.booking.entity.Movie;
-import com.jaz.movie.booking.entity.MovieAvailableShowsData;
 import com.jaz.movie.booking.entity.Screen;
+import com.jaz.movie.booking.entity.SeatInfo;
 import com.jaz.movie.booking.exception.BookingServiceException;
 import com.jaz.movie.booking.exception.MovieNotFoundException;
-import com.jaz.movie.booking.repository.AvailableShowsInfoRepository;
 import com.jaz.movie.booking.repository.MovieInfoRepository;
 import com.jaz.movie.booking.repository.PartialTicketBookRepository;
 import com.jaz.movie.booking.repository.ScreenInfoRepository;
+import com.jaz.movie.booking.repository.SeatInfoInfoRepository;
 import com.jaz.movie.booking.utils.DateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,13 +27,13 @@ import java.util.Optional;
 public class MovieInfoServiceImpl implements MovieInfoService {
 
     @Autowired
-    AvailableShowsInfoRepository availableShowsInfoRepository;
-
-    @Autowired
     ScreenInfoRepository screenInfoRepository;
 
     @Autowired
     MovieInfoRepository movieInfoRepository;
+
+    @Autowired
+    SeatInfoInfoRepository seatInfoInfoRepository;
 
     @Autowired
     PartialTicketBookRepository partialTicketBookRepository;
@@ -54,17 +52,13 @@ public class MovieInfoServiceImpl implements MovieInfoService {
     public MovieScreenResponseDto getMovie(Long id) {
         Optional<Movie> movieOptional = movieInfoRepository.findById(id);
         if (!movieOptional.isPresent()) {
-            log.info("Invalid movie it:: " + id);
+            log.info("Invalid movie id:: " + id);
             throw new MovieNotFoundException("Invalid movie id " + id);
         }
         Movie movie = movieOptional.get();
         List<Screen> screens = screenInfoRepository.findByMovieId(movie.getId());
-        List<MovieAvailableShowsData> showsData = availableShowsInfoRepository.findAll();
         MovieScreenResponseDto movieScreenResponseDto = new MovieScreenResponseDto();
         movieScreenResponseDto.setMovie(movie);
-        screens.stream().forEach(action -> {
-            action.setAvailableShows(showsData);
-        });
         movieScreenResponseDto.setScreens(screens);
         return movieScreenResponseDto;
     }
@@ -73,42 +67,52 @@ public class MovieInfoServiceImpl implements MovieInfoService {
     public AvailableSeatsResponseDto getAvailableSeats(AvailableSeatsRequestDto availableSeatsRequestDto) {
         log.info("Method: getAvailableSeats : " + availableSeatsRequestDto.toString());
         AvailableSeatsResponseDto availableSeats = new AvailableSeatsResponseDto();
+
+        // Ticket Booking Date validation
         if (!DateUtil.isTicketDateValid(availableSeatsRequestDto.getMovieDate())) {
             log.info("Ticket date validation is failed! for: " + availableSeatsRequestDto.getMovieDate());
             throw new BookingServiceException("Ticket date validation is failed. Please choose " +
                     "active date. User can book next 1 week tickets too!");
         }
+
+        //Cross Check the movie id, show id, screen id is exist in our system.
+        Screen availableData = screenInfoRepository.assertCheckMovieMappedInOurSystem(availableSeatsRequestDto.getScreenId(), availableSeatsRequestDto.getShowId(),
+                availableSeatsRequestDto.getMovieId());
+        if (null == availableData) {
+            log.info("There is no movie mapping exist in this screen: " + availableSeatsRequestDto.toString());
+            throw new BookingServiceException("There is no movie mapping exist in this screen.");
+        }
+
+        // Find the booked seats to gather the info and create an Map to put into it. For Seat Availablity.
         List<String> seatIds = partialTicketBookRepository.findBookedSeats(
                 availableSeatsRequestDto.getMovieId(), availableSeatsRequestDto.getScreenId(),
                 availableSeatsRequestDto.getShowId(), availableSeatsRequestDto.getMovieDate(),
                 Boolean.TRUE);
-        String bookedSeats = "EMPTY";
-        if (null != seatIds && !seatIds.isEmpty()) {
-            bookedSeats = String.join(",", seatIds);
-        }
 
         //Find the screen maximum seat capacity
-        Map<String, BigDecimal> seatInfo = new HashMap<>();
         List<Screen> screens = screenInfoRepository.findByMovieId(availableSeatsRequestDto.getMovieId());
-        screens.stream().forEach(action -> {
-            if(action.getSeatType().equalsIgnoreCase(SeatType.NORMAL.toString())){
-                seatInfo.put(SeatType.NORMAL.toString(), action.getAmount());
-            }
-            if(action.getSeatType().equalsIgnoreCase(SeatType.VIP.toString())){
-                seatInfo.put(SeatType.VIP.toString(), action.getAmount());
-            }
-        });
-        availableSeats.setSeatInfo(seatInfo);
+
+        // Update the seat types detail
+        List<SeatInfo> seatTypes = seatInfoInfoRepository.findAll();
+        availableSeats.setSeatInfo(seatTypes);
+
+        // Update the Seat Available Map in Response DTO
         Map<Integer, String> map = getAvailableSeats(seatIds, screens.stream().findFirst().get().getMaxSeat());
         availableSeats.setSeats(map);
 
         Optional<Movie> movieOptional = movieInfoRepository.findById(availableSeatsRequestDto.getMovieId());
         Movie movie = movieOptional.get();
         availableSeats.setMovie(movie);
+
         return availableSeats;
     }
 
     /**
+     * <p>
+     * Get the available and non available seats
+     * Put those details in hashmap
+     * </p>
+     *
      * @param bookedSeats
      * @param seatCapacity
      * @return

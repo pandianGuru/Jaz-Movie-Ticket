@@ -8,15 +8,18 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.math.BigDecimal;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "movie_available_shows")
-public class MovieAvailableShowsData {
+@Table(name = "screen_info")
+public class SeatInfo {
+
     @Id
     @GeneratedValue
     private Long id;
-    private String showTimings;
+    private String name;
+    private BigDecimal amount;
 }

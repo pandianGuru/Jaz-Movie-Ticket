@@ -11,6 +11,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * <p>
+ * Create move, Get Movies and get the seat available detail
+ * </p>
+ *
+ * @author pandian.gurunathan
+ */
 @RestController
 @RequestMapping("/movie")
 @Slf4j
@@ -19,6 +26,14 @@ public class MovieController {
     @Autowired
     MovieInfoService movieInfoService;
 
+    /**
+     * <p>
+     * Create movie in our system
+     * </p>
+     *
+     * @param movie
+     * @return
+     */
     @PostMapping("/create")
     public Movie createMovie(@RequestBody Movie movie) {
         log.info("Create Movie: " + movie.toString());
@@ -35,6 +50,12 @@ public class MovieController {
         return movieInfoService.getMovie(movieId);
     }
 
+    /**
+     * Fetch the free seats by movie id, screen id, show id, date
+     *
+     * @param availableSeatsRequestDto
+     * @return
+     */
     @PutMapping("/get-free-seats")
     public AvailableSeatsResponseDto getAvailableSeats(@RequestBody AvailableSeatsRequestDto availableSeatsRequestDto) {
         log.info("Method: getAvailableSeats : " + availableSeatsRequestDto.toString());

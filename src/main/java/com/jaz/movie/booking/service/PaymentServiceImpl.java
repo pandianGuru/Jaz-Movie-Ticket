@@ -17,6 +17,7 @@ import com.paytm.pg.merchant.PaytmChecksum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,18 +48,34 @@ public class PaymentServiceImpl implements PaymentService {
     @Autowired
     private PaytmConfig paytmConfig;
 
+    @Value("${ticket.session.time.in.minutes}")
+    private int ticketSession;
+
     @Autowired
     private AvailableShowsInfoRepository availableShowsInfoRepository;
+
     @Autowired
     private MovieInfoRepository movieInfoRepository;
 
+    /**
+     * <p>
+     * Check the user id for the security purpose
+     * Check the 'ticketSession' if the session is exceeds the throw an business exception.
+     * Update the payment details in our system.
+     * Finally trigger the email to send the ticket confirmation
+     * </p>
+     *
+     * @param paymentRequestDto
+     * @param parameters
+     * @return
+     */
     @Override
     public BookedTicket paymentValidationAndUpdatePayment(PaymentRequestDto paymentRequestDto, TreeMap<String, String> parameters) {
 
         //Check Valid User in DB
         Optional<User> userObject = userInfoRepository.findById(Long.valueOf(paymentRequestDto.getUserId()));
         if (!userObject.isPresent()) {
-            log.info("User Not Found ::: ", userObject);
+            log.info("User Not Found ::: " + userObject);
             throw new UserNotFoundException("User not found in out system!!!");
         }
 
@@ -88,7 +105,7 @@ public class PaymentServiceImpl implements PaymentService {
     /**
      * @param parameters
      */
-    private Payment savePayment(TreeMap<String, String> parameters) {
+    public Payment savePayment(TreeMap<String, String> parameters) {
         Payment payment = new Payment();
         payment.setAmount(new BigDecimal(parameters.get(PaymentConstants.TXN_AMOUNT)));
         payment.setStatus(parameters.get(PaymentConstants.STATUS)
@@ -120,23 +137,12 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    /*    *//**
-     * @param paymentRequestDto
-     *//*
-    private void assertCheckTicketValidation(PaymentRequestDto paymentRequestDto) {
-        Optional<PartialTicketBook> partialTicketBook = partialTicketBookRepository.findById(paymentRequestDto.getPartialBookId());
-        if (null != partialTicketBook) {
-            log.info("Error : assertCheckTicketValidation : " + paymentRequestDto.toString());
-            assertCheckTicketExpiryInMinutes(partialTicketBook.get());
-        }
-    }*/
-
     /**
      * @param partialTicketBook
      */
     private void assertCheckTicketExpiryInMinutesAfterPayment(PartialTicketBook partialTicketBook) {
         int minutes = DateUtil.findMinutes(partialTicketBook.getCreatedDate());
-        if (100 < minutes) {
+        if (ticketSession < minutes) {
             log.info("Error : assertCheckTicketExpiryInMinutes : " + partialTicketBook.toString());
             partialTicketBook.setIsActive(Boolean.TRUE);
             // Doing soft delete. User can book this ticket.
@@ -152,7 +158,7 @@ public class PaymentServiceImpl implements PaymentService {
      */
     private void assertCheckTicketExpiryInMinutes(PartialTicketBook partialTicketBook) {
         int minutes = DateUtil.findMinutes(partialTicketBook.getCreatedDate());
-        if (100 < minutes) {
+        if (ticketSession < minutes) {
             log.info("Error : assertCheckTicketExpiryInMinutes : " + partialTicketBook.toString());
             partialTicketBook.setIsActive(Boolean.TRUE);
             // Doing soft delete. User can book this ticket.
@@ -208,13 +214,28 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Email Triggered to: ", ticket.getEmailId());
     }
 
-
+    /**
+     * <p>
+     * Validate the paytm check sum to confirm payment success or not.
+     * </p>
+     *
+     * @param parameters
+     * @param paytmChecksum
+     * @return
+     * @throws Exception
+     */
     public boolean validateCheckSum(TreeMap<String, String> parameters, String paytmChecksum) throws Exception {
         return PaytmChecksum.verifySignature(parameters,
                 paytmConfig.getMerchantKey(), paytmChecksum);
     }
 
-
+    /**
+     * Fetch the sum from the map
+     *
+     * @param parameters
+     * @return
+     * @throws Exception
+     */
     public String getCheckSum(TreeMap<String, String> parameters) throws Exception {
         return PaytmChecksum.generateSignature(parameters, paytmConfig.getMerchantKey());
     }

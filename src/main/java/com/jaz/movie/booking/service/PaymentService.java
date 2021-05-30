@@ -2,6 +2,7 @@ package com.jaz.movie.booking.service;
 
 import com.jaz.movie.booking.dto.PaymentRequestDto;
 import com.jaz.movie.booking.entity.BookedTicket;
+import com.jaz.movie.booking.entity.Payment;
 
 import java.util.TreeMap;
 
@@ -16,4 +17,6 @@ public interface PaymentService {
     BookedTicket updatePayment(TreeMap<String, String> parameters, Long bookingId);
 
     void assertCheckTicketSession(Long bookingId);
+
+    Payment savePayment(TreeMap<String, String> parameters);
 }

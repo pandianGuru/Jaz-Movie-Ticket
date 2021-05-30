@@ -1,0 +1,285 @@
+{
+	"info": {
+		"_postman_id": "c5c272ba-f5fb-4bcb-9184-b10023130196",
+		"name": "Jaz",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Sign Up",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "",
+						"value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqYXZhdGVjaGllIiwiZXhwIjoxNjIyMTQxOTQ0LCJpYXQiOjE2MjIxMDU5NDR9.VRu8gLcEH-By6p4_V4VcbACYb2KtLoj4XknjHIJYLv4",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"userName\": \"Jhon\",\r\n    \"email\": \"abc12@gma.com\",\r\n    \"password\": \"password\",\r\n    \"city\": \"Chennai\",\r\n    \"phoneNo\": \"978832922\",\r\n    \"gender\": \"Male\"\r\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8888/user/sign-up",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8888",
+					"path": [
+						"user",
+						"sign-up"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sign In",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqYXZhdGVjaGllIiwiZXhwIjoxNjIyMTQxOTQ0LCJpYXQiOjE2MjIxMDU5NDR9.VRu8gLcEH-By6p4_V4VcbACYb2KtLoj4XknjHIJYLv4",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"userName\": \"Jhon\",\r\n    \"password\": \"password\"\r\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8888/user/sign-in",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8888",
+					"path": [
+						"user",
+						"sign-in"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Movie",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Jhon Wick\",\n    \"type\": \"action\",\n    \"description\": \"Wonderfull movie\",\n    \"language\": \"EN\",\n    \"certificate\": \"U/A\",\n    \"releaseDate\": \"02-02-2019\",\n    \"duration\": \"2 Hrs\",\n    \"price\": 100\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8888/departments",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8888",
+					"path": [
+						"departments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET All Movies",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8888/movies",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8888",
+					"path": [
+						"movies"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search Movie Id",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:9191/departments/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9191",
+					"path": [
+						"departments",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Available Seats",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{JWT_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"movieId\": 2,\r\n    \"screenId\": 2,\r\n    \"showId\": 2,\r\n    \"movieDate\": \"2021-05-28\"\r\n} \r\n    "
+				},
+				"url": {
+					"raw": "http://localhost:8080/movie/get-free-seats",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"movie",
+						"get-free-seats"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Ticket Partial Booking",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{JWT_TOKEN}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\"noOfPersons\": 3,\n\"tickets\": \"29,30,31\",\n \"movieId\":2,\n\"screenId\":2,\n\"showId\":2,\n\"movieDate\":\"2021-05-28\",\n\"movieTime\": \"10 AM\"\n}\n "
+				},
+				"url": {
+					"raw": "http://localhost:8080/book/partial",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"book",
+						"partial"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "Bookaa",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\"noOfPersons\": 2,\n\"tickets\": \"7,8\",\n \"movieId\":1,\n\"screenId\":2,\n\"showId\":1,\n\"bookingDate\":\"2021-05-26\"\n}\n "
+						},
+						"url": {
+							"raw": "http://localhost:8888/book/partial",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8888",
+							"path": [
+								"book",
+								"partial"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Transfer-Encoding",
+							"value": "chunked"
+						},
+						{
+							"key": "Date",
+							"value": "Wed, 26 May 2021 13:08:49 GMT"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=60"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"id\": 73,\n    \"screenId\": 2,\n    \"movieId\": 1,\n    \"showId\": 1,\n    \"userId\": 111,\n    \"noOfPersons\": 2,\n    \"seats\": \"7,8\",\n    \"isPaymentDone\": false,\n    \"bookingDate\": \"2021-05-26\"\n}"
+				}
+			]
+		}
+	]
+}
