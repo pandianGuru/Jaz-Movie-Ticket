@@ -66,8 +66,8 @@ public class PaymentServiceImpl implements PaymentService {
         assertCheckTicketAlreadyBooked(paymentRequestDto);
 
         User user = userObject.get();
-        paymentRequestDto.setUserName(user.getLoginId());
-        paymentRequestDto.setEmailId(user.getName());
+        paymentRequestDto.setUserName(user.getName());
+        paymentRequestDto.setEmailId(user.getLoginId());
 
         //Update Payments object in Payment table
         Payment payment = savePayment(parameters);
