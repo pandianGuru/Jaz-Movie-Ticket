@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <script type="text/javascript"
+            src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
+    </script>
+    <script type="text/javascript">
+
+    function ajaxPost() {
+		var authRequest = {
+			userName : document.getElementById("username").value,
+			password : document.getElementById("password").value
+		}
+		$.ajax({
+			type : "POST",
+			contentType : "application/json",
+			url : "http://localhost:8080/user/sign-in",
+			data : JSON.stringify(authRequest),
+			dataType : 'json',
+			success : function(result) {
+				console.log(result.token);
+				redirectPaymentPage(result.token)
+			},
+			error : function(e) {
+				console.log("ERROR: ", e);
+			}
+		});
+    }
+
+     function redirectPaymentPage(token) {
+		$.ajax({
+			type : "GET",
+			contentType : "application/json",
+			url : "http://localhost:8080/payment/payment-UI",
+			headers: {'Authorization': token},
+			dataType : 'json',
+			success : function(result) {
+				console.log(result);
+			},
+			error : function(e) {
+				window.open("http://localhost:8080/payment/payment-UI", '_blank').focus();
+				console.log("ERROR: ", e);
+			}
+		});
+    }
+
+    </script>
+</head>
+<body>
+<h1> Welcome to Jaz Ticket Movie Payment Page
+</h1>
+<p>
+</p>
+
+<form method="post" id="loginForm">
+    username <input type="text" id="username" name="username" placeholder="Enter Login Id"/>
+    Password <input type="text" id="password" name="password" placeholder="Enter password" />
+    <input type="button" value="log in" id="loginButton"  onclick = "ajaxPost()" />
+
+</form>
+
+</body>
+</html>
