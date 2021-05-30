@@ -1,7 +1,9 @@
 package com.jaz.movie.booking.filter;
 
+import com.jaz.movie.booking.exception.JwtExpiredException;
 import com.jaz.movie.booking.service.UserDetailsServiceImpl;
 import com.jaz.movie.booking.utils.JwtUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,13 +19,13 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Component
+@Slf4j
 public class JwtFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtUtil jwtUtil;
     @Autowired
     private UserDetailsServiceImpl service;
-
 
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
@@ -32,25 +34,32 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String token = null;
         String userName = null;
-
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            token = authorizationHeader.substring(7);
-            userName = jwtUtil.extractUsername(token);
-        }
-
-        if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-            UserDetails userDetails = service.loadUserByUsername(userName);
-
-            if (jwtUtil.validateToken(token, userDetails)) {
-
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                usernamePasswordAuthenticationToken
-                        .setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
-                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+        try {
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                token = authorizationHeader.substring(7);
+                userName = jwtUtil.extractUsername(token);
             }
+
+            if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+                UserDetails userDetails = service.loadUserByUsername(userName);
+
+                if (jwtUtil.validateToken(token, userDetails)) {
+
+                    UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    usernamePasswordAuthenticationToken
+                            .setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
+                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                }
+            }
+            filterChain.doFilter(httpServletRequest, httpServletResponse);
+        } catch (io.jsonwebtoken.ExpiredJwtException ex) {
+            log.info("JWT Expired!!!" + ex.toString());
+            throw new JwtExpiredException("Session Expired. Please login");
+        } catch (Exception ex) {
+            log.info("Token Broke" +ex.toString());
+            throw new JwtExpiredException("We are facing issue in our end. Please try again sometime!");
         }
-        filterChain.doFilter(httpServletRequest, httpServletResponse);
     }
 }

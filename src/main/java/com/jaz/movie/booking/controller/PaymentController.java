@@ -5,6 +5,7 @@ import com.jaz.movie.booking.dto.PaymentResponseDto;
 import com.jaz.movie.booking.entity.BookedTicket;
 import com.jaz.movie.booking.dto.PaymentStatus;
 import com.jaz.movie.booking.service.PaymentService;
+import com.jaz.movie.booking.utils.PaymentConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -88,20 +89,24 @@ public class PaymentController {
                     log.info("updating the success payment in DB Booking Id: " + parameters.get("ORDERID"));
                     bookedTicket = paymentService.updatePayment(parameters, Long.valueOf(parameters.get("ORDERID")));
                 } else {
+                    paymentService.savePayment(parameters);
                     bookedTicket.setPaymentStatus(PaymentStatus.FAILURE.toString());
                 }
             } else {
+                paymentService.savePayment(parameters);
                 bookedTicket.setPaymentStatus(PaymentStatus.FAILURE.toString());
             }
         } catch (Exception e) {
             log.info("Payment Failure ! : ", request);
             bookedTicket.setPaymentStatus(PaymentStatus.FAILURE.toString());
+            paymentService.savePayment(parameters);
         }
-       // paymentResponseDto.setBookedTicket(bookedTicket);
-        parameters.put("Movie Time", bookedTicket.getMovieTime());
-        parameters.put("Booking Id", bookedTicket.getBookedSeats());
-        parameters.put("Movie Name", bookedTicket.getMovieName());
-        parameters.put("No of Persons", String.valueOf(bookedTicket.getNoOfPersons()));
+        if(parameters.get(PaymentConstants.STATUS).equalsIgnoreCase(PaymentConstants.PAYMENT_SUCCESS)) {
+            parameters.put("Movie Time", bookedTicket.getMovieTime());
+            parameters.put("Booking Id", bookedTicket.getBookedSeats());
+            parameters.put("Movie Name", bookedTicket.getMovieName());
+            parameters.put("No of Persons", String.valueOf(bookedTicket.getNoOfPersons()));
+        }
         model.addAttribute("parameters",parameters);
         return "report";
     }

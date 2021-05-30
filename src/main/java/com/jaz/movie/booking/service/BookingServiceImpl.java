@@ -3,15 +3,22 @@ package com.jaz.movie.booking.service;
 import com.jaz.movie.booking.dto.PartialTicketBookRequestDto;
 import com.jaz.movie.booking.dto.PartialTicketBookResponseDto;
 import com.jaz.movie.booking.entity.PartialTicketBook;
+import com.jaz.movie.booking.entity.User;
 import com.jaz.movie.booking.exception.BookingServiceException;
+import com.jaz.movie.booking.exception.JwtExpiredException;
 import com.jaz.movie.booking.exception.TicketNotAvailableException;
+import com.jaz.movie.booking.exception.UserNotFoundException;
 import com.jaz.movie.booking.repository.PartialTicketBookRepository;
+import com.jaz.movie.booking.repository.UserInfoRepository;
 import com.jaz.movie.booking.utils.DateUtil;
+import com.jaz.movie.booking.utils.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -21,15 +28,27 @@ import java.util.Date;
 public class BookingServiceImpl implements BookingService {
 
     @Autowired
+    JwtUtil jwtUtil;
+
+    @Autowired
+    UserInfoRepository userInfoRepository;
+
+    @Autowired
     PartialTicketBookRepository partialTicketBookRepository;
 
+    @Value("${ticket.session.time.in.minutes}")
+    private int ticketSession;
+
     @Override
-    public PartialTicketBookResponseDto bookPartialTicket(PartialTicketBookRequestDto partialTicketBookRequestDto) {
+    public PartialTicketBookResponseDto bookPartialTicket(HttpServletRequest httpServletRequest, PartialTicketBookRequestDto partialTicketBookRequestDto) {
         //General Validation
         assertDateValidation(partialTicketBookRequestDto);
 
         //check ticket is already partially booked or not
         assertCheckTicketBookedPartially(partialTicketBookRequestDto);
+
+        //Update customer id
+        Long userId = updateCustomerId(httpServletRequest, partialTicketBookRequestDto);
 
         PartialTicketBookResponseDto responseDto = new PartialTicketBookResponseDto();
         PartialTicketBook partialTicketBook = null;
@@ -42,7 +61,7 @@ public class BookingServiceImpl implements BookingService {
             partialTicketBook.setNoOfPersons(partialTicketBookRequestDto.getNoOfPersons());
             partialTicketBook.setSeats(partialTicketBookRequestDto.getTickets());
             partialTicketBook.setSeatId(partialTicketBookRequestDto.getTickets().split(",")[i]);
-            partialTicketBook.setUserId(111L);
+            partialTicketBook.setUserId(userId);
             partialTicketBook.setCreatedDate(new Date());
             partialTicketBook.setMovieDate(partialTicketBookRequestDto.getMovieDate());
             partialTicketBook.setIsPaymentDone(Boolean.FALSE);
@@ -65,6 +84,29 @@ public class BookingServiceImpl implements BookingService {
         responseDto.setUserId(partialTicketBook.getUserId());
         responseDto.setMovieTime(partialTicketBookRequestDto.getMovieTime());
         return responseDto;
+    }
+
+    /**
+     * @param httpServletRequest
+     * @param partialTicketBookRequestDto
+     */
+    private Long updateCustomerId(HttpServletRequest httpServletRequest, PartialTicketBookRequestDto partialTicketBookRequestDto) {
+        String authorizationHeader = httpServletRequest.getHeader("Authorization");
+        String token = null;
+        String userName = null;
+        try {
+            token = authorizationHeader.substring(7);
+            userName = jwtUtil.extractUsername(token);
+            User user = userInfoRepository.findByLoginId(userName);
+            if (null == user) {
+                log.info("User Not Found ::: " + userName);
+                throw new UserNotFoundException("User not found in out system!!!");
+            }
+            return user.getId();
+        } catch (Exception ex) {
+            log.info("Token Broke" + ex.toString());
+            throw new JwtExpiredException("We are facing issue in our end. Please try again sometime!");
+        }
     }
 
     /**
@@ -91,8 +133,13 @@ public class BookingServiceImpl implements BookingService {
      */
     private void sortSeatsInAscOrder(PartialTicketBookRequestDto partialTicketBookRequestDto) {
         String seats[] = partialTicketBookRequestDto.getTickets().split(",");
-        Collections.sort(Arrays.asList(seats));
-        partialTicketBookRequestDto.setTickets(String.join(",", seats));
+        Integer[] arr = new Integer[seats.length];
+        for (int i = 0; i < seats.length; i++) {
+            arr[i] = Integer.parseInt(seats[i]);
+        }
+        Collections.sort(Arrays.asList(arr));
+        String.join(",", Arrays.toString(arr));
+        partialTicketBookRequestDto.setTickets(Arrays.toString(arr).replace("]", "").replace("[", "").replace(" ", ""));
     }
 
     /**
@@ -131,11 +178,11 @@ public class BookingServiceImpl implements BookingService {
     public void assertCheckTicketExpiryInMinutes(PartialTicketBook partialTicketBook) {
         int minutes = DateUtil.findMinutes(partialTicketBook.getCreatedDate());
         log.info("##Minutes: " + minutes);
-        if (2 > minutes) {
+        if (ticketSession > minutes) {
             throw new TicketNotAvailableException("This Ticket " + partialTicketBook.getSeatId() + " is already booked");
         } else {
             partialTicketBook.setIsActive(Boolean.TRUE);
-            // Doing soft delete. User can book this ticket.
+            // Updating isActive to TRUE i.e Soft delete. User can book this ticket.
             partialTicketBookRepository.save(partialTicketBook);
         }
     }

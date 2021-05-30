@@ -17,6 +17,7 @@ import com.paytm.pg.merchant.PaytmChecksum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +48,9 @@ public class PaymentServiceImpl implements PaymentService {
     @Autowired
     private PaytmConfig paytmConfig;
 
+    @Value("${ticket.session.time.in.minutes}")
+    private int ticketSession;
+
     @Autowired
     private AvailableShowsInfoRepository availableShowsInfoRepository;
     @Autowired
@@ -58,7 +62,7 @@ public class PaymentServiceImpl implements PaymentService {
         //Check Valid User in DB
         Optional<User> userObject = userInfoRepository.findById(Long.valueOf(paymentRequestDto.getUserId()));
         if (!userObject.isPresent()) {
-            log.info("User Not Found ::: ", userObject);
+            log.info("User Not Found ::: " + userObject);
             throw new UserNotFoundException("User not found in out system!!!");
         }
 
@@ -88,7 +92,7 @@ public class PaymentServiceImpl implements PaymentService {
     /**
      * @param parameters
      */
-    private Payment savePayment(TreeMap<String, String> parameters) {
+    public Payment savePayment(TreeMap<String, String> parameters) {
         Payment payment = new Payment();
         payment.setAmount(new BigDecimal(parameters.get(PaymentConstants.TXN_AMOUNT)));
         payment.setStatus(parameters.get(PaymentConstants.STATUS)
@@ -136,7 +140,7 @@ public class PaymentServiceImpl implements PaymentService {
      */
     private void assertCheckTicketExpiryInMinutesAfterPayment(PartialTicketBook partialTicketBook) {
         int minutes = DateUtil.findMinutes(partialTicketBook.getCreatedDate());
-        if (100 < minutes) {
+        if (ticketSession < minutes) {
             log.info("Error : assertCheckTicketExpiryInMinutes : " + partialTicketBook.toString());
             partialTicketBook.setIsActive(Boolean.TRUE);
             // Doing soft delete. User can book this ticket.
@@ -152,7 +156,7 @@ public class PaymentServiceImpl implements PaymentService {
      */
     private void assertCheckTicketExpiryInMinutes(PartialTicketBook partialTicketBook) {
         int minutes = DateUtil.findMinutes(partialTicketBook.getCreatedDate());
-        if (100 < minutes) {
+        if (ticketSession < minutes) {
             log.info("Error : assertCheckTicketExpiryInMinutes : " + partialTicketBook.toString());
             partialTicketBook.setIsActive(Boolean.TRUE);
             // Doing soft delete. User can book this ticket.
